@@ -1,8 +1,61 @@
 import 'package:flutter/material.dart';
+import 'package:firebase_auth/firebase_auth.dart';
+import 'package:firebase_database/firebase_database.dart';
 import 'catalog_page.dart';
 
-class RegisterPage extends StatelessWidget {
+class RegisterPage extends StatefulWidget {
   const RegisterPage({super.key});
+
+  @override
+  State<RegisterPage> createState() => _RegisterPageState();
+}
+
+class _RegisterPageState extends State<RegisterPage> {
+  final usuarioController = TextEditingController();
+  final correoController = TextEditingController();
+  final claveController = TextEditingController();
+
+  Future<void> registrarUsuario() async {
+    try {
+      final credencial = await FirebaseAuth.instance.createUserWithEmailAndPassword(
+        email: correoController.text.trim(),
+        password: claveController.text.trim(),
+      );
+
+      await FirebaseDatabase.instance
+          .ref('usuarios/${credencial.user!.uid}')
+          .set({
+        'usuario': usuarioController.text.trim(),
+        'correo': correoController.text.trim(),
+      });
+
+      if (!mounted) return;
+
+      Navigator.pushReplacement(
+        context,
+        MaterialPageRoute(
+          builder: (context) => const CatalogPage(),
+        ),
+      );
+    } catch (e) {
+      if (!mounted) return;
+
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('Error al registrar: $e'),
+          backgroundColor: Colors.red,
+        ),
+      );
+    }
+  }
+
+  @override
+  void dispose() {
+    usuarioController.dispose();
+    correoController.dispose();
+    claveController.dispose();
+    super.dispose();
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -25,10 +78,9 @@ class RegisterPage extends StatelessWidget {
                 fontWeight: FontWeight.bold,
               ),
             ),
-
             const SizedBox(height: 30),
-
             TextField(
+              controller: usuarioController,
               style: const TextStyle(color: Colors.white),
               decoration: InputDecoration(
                 labelText: 'Nombre de usuario',
@@ -39,10 +91,9 @@ class RegisterPage extends StatelessWidget {
                 ),
               ),
             ),
-
             const SizedBox(height: 20),
-
             TextField(
+              controller: correoController,
               style: const TextStyle(color: Colors.white),
               decoration: InputDecoration(
                 labelText: 'Correo electrónico',
@@ -53,10 +104,9 @@ class RegisterPage extends StatelessWidget {
                 ),
               ),
             ),
-
             const SizedBox(height: 20),
-
             TextField(
+              controller: claveController,
               obscureText: true,
               style: const TextStyle(color: Colors.white),
               decoration: InputDecoration(
@@ -68,9 +118,7 @@ class RegisterPage extends StatelessWidget {
                 ),
               ),
             ),
-
             const SizedBox(height: 30),
-
             ElevatedButton(
               style: ElevatedButton.styleFrom(
                 backgroundColor: Colors.red,
@@ -79,14 +127,7 @@ class RegisterPage extends StatelessWidget {
                   vertical: 15,
                 ),
               ),
-              onPressed: () {
-                Navigator.push(
-                  context,
-                  MaterialPageRoute(
-                    builder: (context) => const CatalogPage(),
-                  ),
-                );
-              },
+              onPressed: registrarUsuario,
               child: const Text(
                 'Registrarse',
                 style: TextStyle(color: Colors.white),
